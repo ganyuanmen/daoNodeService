@@ -1,0 +1,15 @@
+{
+  "name": "daoNodeService",
+  "version": "0.0.1",
+  "description": "daoNodeService",
+  "main": "app.js",
+  "author": {
+    "name": ""
+  },
+  "dependencies": {
+    "daoapi": "^1.0.11",
+    "jszip": "^3.7.1",
+    "mysql": "^2.18.1",
+    "web3": "^1.6.1"
+  }
+}
