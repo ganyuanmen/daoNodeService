@@ -1,14 +1,21 @@
 'use strict';
-
-console.log('Hello world');
+// var i1=(new Date()).getTime();
+// var i2=0;
+// setInterval(() => {
+//     i2=(new Date()).getTime();
+//     console.log("------>"+(i2-i1))
+//     i1=(new Date()).getTime();
+    
+// }, 1000);
+// console.log('Hello world');
 
 
 const Web3 = require('web3')
 const Daoapi = require("daoapi")
 var mysql = require('mysql');
 var fs = require("fs");
-//const schedule =require("node-schedule");
-var myListen = { isError: false, count: 0 }
+const schedule =require("node-schedule");
+var myListen = { isError: false, count: 0,timest:(new Date()).getTime() }
 
 var web3; // = new Web3('wss://ropsten.infura.io/ws/v3/63aa34e959614d01a9a65d3f93b70e66')
 var selectAcouunt = '0x75EFcbeC4961D6FD3B77F271ce9e5cb7458cb69E'
@@ -16,6 +23,7 @@ var daoapi; // = new Daoapi(web3, selectAcouunt,'Ropsten');;
 
 async function cethonnect() {
     myListen.count = 0;
+    myListen.timest=(new Date()).getTime();
 
     if (daoapi && daoapi.unsub) {
         daoapi.unsub()
@@ -69,29 +77,50 @@ function hand() {
         + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_swapdeth'  //10
         + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_pro'  //11
         + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_provote'  //12
-        + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_proexcu';  //13
+        + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_proexcu'  //13
+        + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_app';  //14
     conn.query(sql, function (error, results, fields) {
         console.log(results)
         if (error) throw error;
+        maxData = [];
         results.forEach(element => {
             maxData.push(element.s)
         });
 
         console.log("start...........")
         cethonnect();
-        setInterval(function () {
-            if (myListen.isError) {
-                p("ERROR restaet web3 listener!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                cethonnect();
+        // setInterval(function () {
+        //     if (myListen.isError) {
+        //         p("ERROR restaet web3 listener!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        //         cethonnect();
 
-            }
-            if (myListen.count > 120) {
-                p(" Time out restaet web3")
-                cethonnect();
-            }
-            myListen.count++;
+        //     }
+        //     if (myListen.count > 10) {
+        //         p(" Time out restaet web3")
+        //         cethonnect();
+        //     }
+        //     myListen.count++;
+        //    p(myListen.count+"----------->");
 
-        }, 1000 * 60);
+        // }, 1000 * 60);
+
+        
+      schedule.scheduleJob("5 * * * * *",async() => {
+
+                 if (myListen.isError) {
+                    p("ERROR restaet web3 listener!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                    cethonnect();
+                }
+                if (myListen.count > 10) {
+                    p(" Time out restaet web3")
+                    cethonnect();
+                }
+                if(((new Date()).getTime()-myListen.timest)>1000)
+               { p(myListen.count+"----------->");
+                myListen.count++;
+                myListen.timest=(new Date()).getTime();
+            }
+        });
     });
 }
 
@@ -112,26 +141,6 @@ function p(k) {
     console.log(myDate.getHours() + ":" + myDate.getMinutes() + ":" + myDate.getSeconds() + "-->" + k)
 }
 function lisitern() {
-
-    //  schedule.scheduleJob("5 * * * * *",async() => {
-
-    // //dao
-    //  if(daoapi)
-    // {
-    //     daoapi.unsub()
-    //     setTimeout(() => {
-    //        delete daoapi; 
-    //        //gc();
-    //       // console.log("------------------------------------------>")
-    //       // console.log(process.memoryUsage())
-    //        setTimeout(() => {
-    //         daoapi = new Daoapi(web3, selectAcouunt,'Ropsten');
-    //        }, 1000);
-
-    //     }, 3000);
-
-
-    // }
 
 
 
@@ -288,7 +297,7 @@ function lisitern() {
     })
 
 
-    daoapi.eventSum.execEvent(maxData[13], data => {
+    daoapi.eventSum.execEvent(maxData[13],data => {
         console.log(data);
         let sql = "INSERT INTO t_proexcu(block_num,pro_index,pro_del,excu_address,excu_time)  VALUES(?,?,?,?,?)";
         let params = [data.blockNumber, data.data.proIndex, data.data.voteDel, data.data.address, data.data.time];
@@ -296,6 +305,24 @@ function lisitern() {
         insertO(sql, params);
     })
 
+    //appadd
+    daoapi.allapp.addAppEvent(maxData[14],async data => {
+      //  daoapi.allapp.addAppEvent(11984300,async data => {
+        
+        console.log(data);
+        let _data = await daoapi.allapp.getAppInfo(data.data.index);
+       // console.log(_data)
+        let _app = await daoapi.allapp.getVersionInfo(data.data.index,_data.versions);
+        // console.log("----------------")
+        // console.log([data.data.index,_data.versions])
+        // console.log(_app);
+        
+
+        let sql = "INSERT INTO t_app(block_num,app_name,app_index,app_index_rec,app_desc,app_version,app_address,app_manager,app_time) VALUES(?,?,?,?,?,?,?,?,?)";
+        let params = [data.blockNumber,_data.name, data.data.index, data.data.indexRec,_app.desc,_data.versions,_app.to,data.data.address,data.data.time];
+        maxData[14] = data.blockNumber
+        insertO(sql, params);
+    })
 
 }
 
