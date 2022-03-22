@@ -78,7 +78,9 @@ function hand() {
         + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_pro'  //11
         + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_provote'  //12
         + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_proexcu'  //13
-        + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_app';  //14
+        + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_app'  //14
+        + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_application'  //15
+        + ' UNION ALL SELECT IFNULL(MAX(block_num),0) FROM t_appversion';  //16
     conn.query(sql, function (error, results, fields) {
         console.log(results)
         if (error) throw error;
@@ -307,20 +309,36 @@ function lisitern() {
 
     //appadd
     daoapi.allapp.addAppEvent(maxData[14],async data => {
-      //  daoapi.allapp.addAppEvent(11984300,async data => {
-        
         console.log(data);
         let _data = await daoapi.allapp.getAppInfo(data.data.index);
-       // console.log(_data)
         let _app = await daoapi.allapp.getVersionInfo(data.data.index,_data.versions);
-        // console.log("----------------")
-        // console.log([data.data.index,_data.versions])
-        // console.log(_app);
-        
-
+     
         let sql = "INSERT INTO t_app(block_num,app_name,app_index,app_index_rec,app_desc,app_version,app_address,app_manager,app_time) VALUES(?,?,?,?,?,?,?,?,?)";
-        let params = [data.blockNumber,_data.name, data.data.index, data.data.indexRec,_app.desc,_data.versions,_app.to,data.data.address,data.data.time];
+        let params = [data.blockNumber,_data.name, data.data.index, data.data.indexRec,_data.desc,_data.versions,_app.to,data.data.address,data.data.time];
         maxData[14] = data.blockNumber
+        insertO(sql, params);
+    })
+
+     //appaddversion
+     daoapi.allapp.addVersionEvent(maxData[16],async data => {
+        console.log(data);
+      
+        let _app = await daoapi.allapp.getVersionInfo(data.data.appNum,data.data.version);
+      
+     
+        let sql = "INSERT INTO t_appversion(block_num,app_index,app_index_rec,app_desc,app_version,app_address) VALUES(?,?,?,?,?,?)";
+        let params = [data.blockNumber, data.data.appNum, data.data.rec, _app.desc,data.data.version,_app.to];
+        console.log(params)
+        maxData[16] = data.blockNumber
+        insertO(sql, params);
+    })
+   
+
+    daoapi.application.installEvent(maxData[15],data => {
+        console.log(data);
+        let sql = "INSERT INTO t_application(block_num,dao_id,app_id,app_version,app_del)  VALUES(?,?,?,?,?)";
+        let params = [data.blockNumber, data.data.daoId, data.data.appsetId, data.data.appsetVersion, data.data.votedelAddress];
+        maxData[15] = data.blockNumber
         insertO(sql, params);
     })
 
