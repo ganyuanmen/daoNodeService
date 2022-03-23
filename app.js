@@ -31,8 +31,12 @@ async function cethonnect() {
 
     web3 = await new Web3('wss://ropsten.infura.io/ws/v3/63aa34e959614d01a9a65d3f93b70e66');
     daoapi = new Daoapi(web3, selectAcouunt, 'Ropsten', myListen);
-
+    try {
     lisitern();
+    } catch(e)
+    {
+        console.log(e)
+    }
 }
 var data = fs.readFileSync('./sn.txt', 'utf8');
 var _json = JSON.parse(data)
